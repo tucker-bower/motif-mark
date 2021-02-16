@@ -11,9 +11,9 @@ The details of the bio-conda environment this program was developed and tested w
 
 ## Executing the Script
 To get started, here is a command that runs the program with the example data from this repository:
-'''
+```
 python motif_mark.py -f example_data/Figure_1.fasta -m example_data/Fig_1_motifs.txt
-'''
+```
 
 ### Arguments 
 
