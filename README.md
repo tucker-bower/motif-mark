@@ -22,6 +22,6 @@ Parameter Name | Explanation
 --fasta (-f) |  Input .fasta file with sequence introns as lowercase and exons as uppercase
 --motifs (-m) | File containing motif sequences of interest (maximum: 5)
 --colors (-c) | File containing rgb values for desired motif colors, see [example](https://github.com/tucker-bower/motif-mark/tree/main/example_data/pastels.txt)
-
+--output (-o) | Output directory (ex: ./example_data/)
 ## Example Output
 ![figure1.svg](https://github.com/tucker-bower/motif-mark/blob/main/example_data/Figure_1.svg)
