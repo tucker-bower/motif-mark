@@ -12,18 +12,20 @@ import cairo
 import re
 
 parser = argparse.ArgumentParser(description = 'Input: fasta file with exons capitalized and motifs file | Output: Motif location visualization ')
-parser.add_argument('-f' , '--fasta' , type = str, nargs = 1, help = 'input .fasta file with exons capitalized.')
+parser.add_argument('-f' , '--fasta' , type = str, nargs = 1, help = 'input .fasta file and file path (ex: ./example_data/Figure_1.fasta')
 parser.add_argument('-m' , '--motifs' , type = str, nargs = 1, help = 'file containing motifs of interest, one per line')
 parser.add_argument('-o' , '--output' , type = str, nargs = 1, help = 'Output directory', default = '.')
+parser.add_argument('-c' , '--colors' , type = str, nargs = 1, help = 'Colors file', default = ['./example_data/pastels.txt'])
 args = parser.parse_args()
 
 FASTA_FILE = open(args.fasta[0], "r")
 MOTIFS_FILE = open(args.motifs[0], "r")
+COLORS_FILE = open(args.colors[0], "r")
 
-FASTA_PREFIX = re.findall('(.+)\..+', args.fasta[0])[0]
+OUTPUT_DIR = args.output[0]
+FASTA_PREFIX = re.findall('/(.+)\..+', args.fasta[0])[0]
 
-OUTPUT_FILE_NAME = FASTA_PREFIX + '.svg'
-
+OUTPUT_FILE_NAME = './' + OUTPUT_DIR + FASTA_PREFIX + '.svg'
 
 IUPAC_CODES_DICT = {'A':'[Aa]', 'T':'[TtUu]', 'U':'[TtUu]', 'C':'[Cc]', 'G':'[Gg]', 'C':'[Cc]', 'R':'[AaGg]', 'Y':'[CcTtUU]',
     'W':'[AaTtUu]', 'S':'[GgCc]', 'M':'[AaCc]', 'K':'[GgTtUu]', 'B':'[CcGgTtUu]', 'D':'[AaGgTtUu]', 'H':'[AaCcTtUu]',
@@ -31,7 +33,9 @@ IUPAC_CODES_DICT = {'A':'[Aa]', 'T':'[TtUu]', 'U':'[TtUu]', 'C':'[Cc]', 'G':'[Gg
 #Dictionary where the keys are IUPAC codes and values are sequence bases
 
 def fasta_string_inator(fasta_file):
-    '''Creates a dictionary where each key is the gene name and the value is the string for the entire sequence'''
+    '''Creates a dictionary where
+    keys: gene names
+    values: DNA/RNA sequence as string'''
     gene_sequence_dict = {}
     while True:
         line = fasta_file.readline().rstrip()
@@ -56,8 +60,9 @@ GENE_SEQUENCE_DICT = fasta_string_inator(FASTA_FILE)
 
 
 def iupac_regex_inator(motifs_file):
-    '''Reads through the motifs file and creates a dictionary where the keys are the motifs and the values are regex terms that can be used to locate 
-    that motif in a sequence, accounting for IUPAC ambiguos nucleotide notation'''
+    '''Creates a dictionary where:
+    keys: motifs 
+    values: regex terms that can be used to locate that motif, accounting for IUPAC ambiguous nucleotide notation'''
     motif_regex_dict = {}
     while True:
         motif = motifs_file.readline().rstrip()
@@ -85,8 +90,34 @@ def motif_coordinates_inator(motif, sequence):
         motif_locations_list.append(motif_midpoint)
     return motif_locations_list
 
-colors = [[102,194,165], [252,141,98], [141,160,203], [231,138,195], [166,216,84]]
-# A list of RGB values for five colors from one scheme from colorbrewer2.org
+def color_brew_inator():
+    '''Loads the color palette in from a user given file'''
+    colors_list = []
+    while True:
+        line =  COLORS_FILE.readline().rstrip()
+        if line == '':
+            break
+        color_rgb_values = re.findall('[0-9]{1,3}', line)
+        colors_list.append(color_rgb_values)
+    return colors_list
+    #grabbing all of the colors. 
+    #   The rgb values of each color are a list. 
+    #   All color lists are stored in an outer list (COLORS_LIST)'
+
+COLORS_LIST = color_brew_inator()
+
+def make_colors_ints_inator():
+    '''Changes the rgb values in the colors list from strings to ints'''
+    colors_ints_list = []
+    for color in COLORS_LIST:
+        color_ints = []
+        for rgb_string in color:
+            rgb_int = int(rgb_string)
+            color_ints.append(rgb_int)
+        colors_ints_list.append(color_ints)
+    return colors_ints_list
+
+COLORS_INTS_LIST = make_colors_ints_inator()
 
 def pycairo_figure_inator():
     '''Uses pycairo to create the output figure'''
@@ -140,7 +171,7 @@ def pycairo_figure_inator():
         motif_counter = 0
         for motif in MOTIF_REGEX_DICT.values():
             motif_counter += 1
-            context.set_source_rgba(colors[motif_counter-1][0]/255, colors[motif_counter-1][1]/255, colors[motif_counter-1][2]/255, 0.7)
+            context.set_source_rgba(COLORS_INTS_LIST[motif_counter-1][0]/255, COLORS_INTS_LIST[motif_counter-1][1]/255, COLORS_INTS_LIST[motif_counter-1][2]/255, 0.7)
             motif_locations_list = motif_coordinates_inator(motif, gene_sequence)
             
             for location in motif_locations_list:
@@ -160,7 +191,7 @@ def pycairo_figure_inator():
         legend_counter += 1
         context.move_to(10, y_coordinate + 40 + 15 * legend_counter)
         context.set_line_width(12)
-        context.set_source_rgba(colors[legend_counter-1][0]/255,colors[legend_counter-1][1]/255,colors[legend_counter-1][2]/255,1)
+        context.set_source_rgba(COLORS_INTS_LIST[legend_counter-1][0]/255,COLORS_INTS_LIST[legend_counter-1][1]/255,COLORS_INTS_LIST[legend_counter-1][2]/255,1)
         context.line_to(15, y_coordinate + 40 + 15 * legend_counter)
         context.stroke()
         context.move_to(20, y_coordinate + 40 + 15 * legend_counter)
